@@ -1,18 +1,18 @@
 {
-  "name": "cs375_project",
-  "version": "1.0.0",
-  "description": "\"# CS375_Project\"",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "express": "^4.19.2",
-    "phaser": "^3.80.1",
-    "uuid": "^10.0.0",
-    "ws": "^8.18.0"
-  }
+    "name": "cs375_project",
+    "version": "1.0.0",
+    "description": "\"# CS375_Project\"",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "express": "^4.19.2",
+        "phaser": "^3.80.1",
+        "uuid": "^10.0.0",
+        "ws": "^8.18.0"
+    }
 }
