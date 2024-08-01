@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>2D Shooter</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
+    <script>
+        fetch('/env.json')
+            .then(response => response.json())
+            .then(config => {
+                window.gameConfig = config;
+                const script = document.createElement('script');
+                script.src = '/multiplayer-client.js';
+                document.body.appendChild(script);
+            });
+    </script>
+</head>
+
+<body>
+    <h1>2D Shooter</h1>
+</body>
+
+</html>
