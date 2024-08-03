@@ -3,6 +3,10 @@ class gameScene extends Phaser.Scene {
         super({ key: 'gameScene' });
     }
 
+    preload() {
+        this.load.image("bullet", "assets/bullet.png");
+    }
+
     create() {
         //creating the player
         this.player = this.add.rectangle(400, 300, 50, 50, 0xff0000);
@@ -36,6 +40,9 @@ class gameScene extends Phaser.Scene {
             this.player.body.setVelocityY(-160);
         } else if(this.cursors.down.isDown) {
             this.player.body.setVelocityY(160);
+        }
+        if (this.cursors.space.isDown) {
+            var projectile = new Bullet(this);
         }
     }
 }
