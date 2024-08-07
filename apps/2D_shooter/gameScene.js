@@ -1,6 +1,8 @@
 class gameScene extends Phaser.Scene {
     constructor() {
         super({ key: 'gameScene' });
+
+        this.bulletGroup;
     }
 
     preload() {
@@ -8,6 +10,9 @@ class gameScene extends Phaser.Scene {
     }
 
     create() {
+        this.bulletGroup = new BulletGroup(this);
+        this.addEvents();
+
         //creating the player
         this.player = this.add.rectangle(400, 300, 50, 50, 0xff0000);
         this.physics.add.existing(this.player);
@@ -24,6 +29,23 @@ class gameScene extends Phaser.Scene {
 
         //physics
         this.physics.add.collider(this.player, this.walls);
+
+        //collision between obstacles and bullets
+        this.physics.add.collider(this.walls, this.bulletGroup, (object1, object2) => {
+            object2.setActive(false);
+            object2.setVisible(false);
+        });
+
+    }
+    
+    //mouseclick event for shooting
+    addEvents() {
+        this.input.on('pointerdown', pointer => {
+            this.shootBullet(pointer);
+        })
+    }
+    shootBullet(pointer) {
+        this.bulletGroup.fireBullet(this.player.x, this.player.y, pointer);
     }
 
     update() {
@@ -40,9 +62,6 @@ class gameScene extends Phaser.Scene {
             this.player.body.setVelocityY(-160);
         } else if(this.cursors.down.isDown) {
             this.player.body.setVelocityY(160);
-        }
-        if (this.cursors.space.isDown) {
-            var projectile = new Bullet(this);
         }
     }
 }
