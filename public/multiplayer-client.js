@@ -82,7 +82,7 @@ let cursors;
 let player;
 let otherPlayers = {};
 
-const socket = new WebSocket('ws://localhost:3000');
+const socket = new WebSocket('ws://10.250.30.122:3000');
 
 socket.onopen = () => {
     console.log('Connected to WebSocket server');
