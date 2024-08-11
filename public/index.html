@@ -4,20 +4,55 @@
 <head>
     <title>2D Shooter</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.min.js"></script>
-    <script>
-        fetch('/env.json')
-            .then(response => response.json())
-            .then(config => {
-                window.gameConfig = config;
-                const script = document.createElement('script');
-                script.src = '/multiplayer-client.js';
-                document.body.appendChild(script);
-            });
-    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+
+        #gameContainer {
+            display: none;
+        }
+
+        button {
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+        }
+
+        input {
+            margin: 10px;
+            padding: 5px;
+            font-size: 16px;
+        }
+    </style>
 </head>
 
 <body>
     <h1>2D Shooter</h1>
+    <p>Enter a lobby code to join a specific lobby or click "Play Now" to start a game immediately.</p>
+    <p>Lobby codes: red, blue, green, yellow, purple</p>
+    <div id="lobbyContainer">
+        <input type="text" id="lobbyCode" placeholder="Enter Lobby Code (red, blue, green)">
+        <button id="joinLobbyBtn">Join Lobby</button>
+        <button id="playNowBtn">Play Now</button>
+    </div>
+
+    <script>
+        document.getElementById('joinLobbyBtn').addEventListener('click', () => {
+            const lobbyCode = document.getElementById('lobbyCode').value;
+            if (['red', 'blue', 'green', 'yellow', 'purple'].includes(lobbyCode)) {
+                window.location.href = `gameboard.html?lobby=${lobbyCode}`;
+            } else {
+                alert('Please enter a valid lobby code (red, blue, green)');
+            }
+        });
+
+        document.getElementById('playNowBtn').addEventListener('click', () => {
+            window.location.href = `gameboard.html`;
+        });
+    </script>
 </body>
 
 </html>

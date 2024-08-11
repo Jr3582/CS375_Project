@@ -1,11 +1,14 @@
 function preload() {
-    this.load.image("bullet", "./assets/bullet.png")
+    /* I (Tasnim) am commenting out the below line that is Nam's addition
+     but currently conflicting with multiplayer feature. We're working on it to fix it.*/
+
+    //this.load.image("bullet", "./assets/bullet.png")
 }
 
 function create() {
     console.log('Creating player');
     this.add.image(100, 100, 'bullet');
-    // Creating a square as the player for now
+
     player = this.add.graphics();
     player.fillStyle(0x00ff00, 1.0); // Green color for own player
     player.fillRect(0, 0, 50, 50);
@@ -82,11 +85,14 @@ let cursors;
 let player;
 let otherPlayers = {};
 
-const socket = new WebSocket('ws://10.250.30.122:3000');
+const socket = new WebSocket(`ws://localhost:3000?lobby=${window.lobbyCode}`);
 
 socket.onopen = () => {
-    console.log('Connected to WebSocket server');
+    console.log(`Connected to WebSocket server in lobby ${window.lobbyCode}`);
 };
+
+
+
 socket.onerror = (error) => {
     console.error('WebSocket error:', error);
 };
