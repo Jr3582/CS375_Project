@@ -1,7 +1,10 @@
-function preload() {}
+function preload() {
+    this.load.image("bullet", "./assets/bullet.png")
+}
 
 function create() {
     console.log('Creating player');
+    this.add.image(100, 100, 'bullet');
     // Creating a square as the player for now
     player = this.add.graphics();
     player.fillStyle(0x00ff00, 1.0); // Green color for own player
