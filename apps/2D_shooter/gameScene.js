@@ -8,7 +8,7 @@ class gameScene extends Phaser.Scene {
     preload() {
         // Load the bullet and background images
         this.load.image("bullet", "assets/bullet.png");
-        this.load.image("background", "assets/background.png"); // Load background image
+        this.load.image("background", "assets/background.png"); // Load background image (supposed to be concrete tiles)
     }
 
     create() {
