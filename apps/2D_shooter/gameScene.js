@@ -32,8 +32,10 @@ class gameScene extends Phaser.Scene {
 
         //collision between obstacles and bullets
         this.physics.add.collider(this.walls, this.bulletGroup, (object1, object2) => {
-            object2.setActive(false);
-            object2.setVisible(false);
+            if (object2.state !== 1) {
+                object2.setActive(false);
+                object2.setVisible(false);
+            }
         });
 
     }
@@ -41,11 +43,12 @@ class gameScene extends Phaser.Scene {
     //mouseclick event for shooting
     addEvents() {
         this.input.on('pointerdown', pointer => {
-            this.shootBullet(pointer);
+            let bulletState = 3;
+            this.shootBullet(pointer, bulletState);
         })
     }
-    shootBullet(pointer) {
-        this.bulletGroup.fireBullet(this.player.x, this.player.y, pointer);
+    shootBullet(pointer, bulletState) {
+        this.bulletGroup.fireBullet(this.player, pointer.x, pointer.y, bulletState);
     }
 
     update() {
