@@ -11,11 +11,15 @@
         fetch('/env.json')
             .then(response => response.json())
             .then(config => {
-                window.gameConfig = config;
                 window.lobbyCode = lobby;
-                const script = document.createElement('script');
-                script.src = '/multiplayer-client.js';
-                document.body.appendChild(script);
+                const bulletScript = document.createElement('script');
+                bulletScript.src = '/bullet.js';
+                bulletScript.onload = () => {
+                    const script = document.createElement('script');
+                    script.src = '/multiplayer-client.js';
+                    document.body.appendChild(script);
+                };
+                document.body.appendChild(bulletScript);
             });
     </script>
 </head>

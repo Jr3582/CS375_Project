@@ -1,98 +1,124 @@
-function preload() {
-    /* I (Tasnim) am commenting out the below line that is Nam's addition
-     but currently conflicting with multiplayer feature. We're working on it to fix it.*/
+class GameScene extends Phaser.Scene {
+    constructor() {
+        super({ key: 'GameScene' });
+        this.bulletGroup = null;
+        this.player = null;
+        this.otherPlayers = {};
+    }
 
-    //this.load.image("bullet", "./assets/bullet.png")
-}
+    preload() {
+        // Load any assets if needed, e.g., bullet image
+       this.load.image('bullet', 'assets/bullet.png');
+       this.load.image("background", "assets/background.jpg");
+    }
 
-function create() {
-    console.log('Creating player');
-    this.add.image(100, 100, 'bullet');
+    create() {
+        console.log('Creating player');
+        this.add.image(400, 300, "background").setDisplaySize(800, 600); 
 
-    player = this.add.graphics();
-    player.fillStyle(0x00ff00, 1.0); // Green color for own player
-    player.fillRect(0, 0, 50, 50);
-    player.setPosition(400, 300);
+        // Initialize bullet group
+        this.bulletGroup = new BulletGroup(this);
 
-    cursors = this.input.keyboard.createCursorKeys();
+        // Create player
+        this.player = this.add.rectangle(400, 300, 50, 50, 0x00ff00);
+        this.physics.add.existing(this.player);
+        this.player.body.setCollideWorldBounds(true);
 
-    socket.onmessage = async(event) => {
-        let message;
-        if (typeof event.data === 'string') {
-            message = event.data;
-        } else {
-            message = await event.data.text();
-        }
-        const data = JSON.parse(message);
+        // Set up cursor keys for movement
+        this.cursors = this.input.keyboard.createCursorKeys();
 
-        if (data.type === 'init') {
-            socket.id = data.id;
-            console.log(`Assigned ID: ${socket.id}`);
-        } else {
-            if (data.id !== socket.id) {
-                if (!otherPlayers[data.id]) {
-                    const otherPlayer = this.add.graphics();
-                    otherPlayer.fillStyle(0xff0000, 1.0); // Red color for other players
-                    otherPlayer.fillRect(0, 0, 50, 50);
-                    otherPlayer.setPosition(data.x, data.y);
-                    otherPlayers[data.id] = otherPlayer;
-                } else {
-                    otherPlayers[data.id].setPosition(data.x, data.y);
+        // Setup WebSocket connection and event listeners
+        this.setupWebSocket();
+    }
+
+    setupWebSocket() {
+        const socket = new WebSocket(`ws://localhost:3000?lobby=${window.lobbyCode}`);
+
+        socket.onmessage = async (event) => {
+            let message;
+            if (typeof event.data === 'string') {
+                message = event.data;
+            } else {
+                message = await event.data.text();
+            }
+            const data = JSON.parse(message);
+
+            if (data.type === 'init') {
+                socket.id = data.id;
+                console.log(`Assigned ID: ${socket.id}`);
+            } else {
+                if (data.id !== socket.id) {
+                    if (!this.otherPlayers[data.id]) {
+                        const otherPlayer = this.add.rectangle(data.x, data.y, 50, 50, 0xff0000);
+                        this.physics.add.existing(otherPlayer);
+                        this.otherPlayers[data.id] = otherPlayer;
+                    } else {
+                        this.otherPlayers[data.id].setPosition(data.x, data.y);
+                    }
                 }
             }
+        };
+
+        socket.onopen = () => {
+            console.log(`Connected to WebSocket server in lobby ${window.lobbyCode}`);
+        };
+
+        socket.onerror = (error) => {
+            console.error('WebSocket error:', error);
+        };
+
+        this.socket = socket;
+    }
+
+    update() {
+        let moved = false;
+
+        // Handle player movement
+        this.player.body.setVelocity(0);
+        if (this.cursors.left.isDown) {
+            this.player.body.setVelocityX(-160);
+            moved = true;
+        } else if (this.cursors.right.isDown) {
+            this.player.body.setVelocityX(160);
+            moved = true;
         }
-    };
+        if (this.cursors.up.isDown) {
+            this.player.body.setVelocityY(-160);
+            moved = true;
+        } else if (this.cursors.down.isDown) {
+            this.player.body.setVelocityY(160);
+            moved = true;
+        }
 
-    console.log('Player created:', player);
-}
+        // Handle shooting on mouse click
+        if (this.input.activePointer.isDown) {
+            const pointerX = this.input.activePointer.worldX;
+            const pointerY = this.input.activePointer.worldY;
+            this.bulletGroup.fireBullet(this.player, pointerX, pointerY, 1); // Use bulletState 0 for normal bullets
+            console.log("Bullet fired at position: ", pointerX, pointerY);
+        }
 
-function update() {
-    let moved = false;
-    if (cursors.left.isDown && player.x > 0) {
-        player.x -= 3;
-        moved = true;
-    } else if (cursors.right.isDown && this.game.config.width > player.x + 50) {
-        player.x += 3;
-        moved = true;
-    }
-    if (cursors.up.isDown && player.y > 0) {
-        player.y -= 3;
-        moved = true;
-    } else if (cursors.down.isDown && this.game.config.height > player.y + 50) {
-        player.y += 3;
-        moved = true;
-    }
-
-    if (moved) {
-        const data = { id: socket.id, x: player.x, y: player.y };
-        socket.send(JSON.stringify(data));
+        if (moved) {
+            const data = { id: this.socket.id, x: this.player.x, y: this.player.y };
+            this.socket.send(JSON.stringify(data));
+        }
     }
 }
 
-const config = window.gameConfig;
+// Game configuration
+const config = {
+    type: Phaser.AUTO,
+    width: 800,
+    height: 600,
+    scene: [GameScene],
+    physics: {
+        default: 'arcade',
+        arcade: {
+            gravity: { y: 0 },
+            debug: false
+        }
+    }
+};
 
-if (config.type === "Phaser.AUTO") {
-    config.type = Phaser.AUTO;
-}
-
-config.scene.preload = preload;
-config.scene.create = create;
-config.scene.update = update;
-
+// Initialize the game
 const game = new Phaser.Game(config);
-
-let cursors;
-let player;
-let otherPlayers = {};
-
-const socket = new WebSocket(`ws://localhost:3000?lobby=${window.lobbyCode}`);
-
-socket.onopen = () => {
-    console.log(`Connected to WebSocket server in lobby ${window.lobbyCode}`);
-};
-
-
-
-socket.onerror = (error) => {
-    console.error('WebSocket error:', error);
-};
