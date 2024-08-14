@@ -1,4 +1,23 @@
 const express = require('express');
+let { Pool } = require("pg");
+// make this script's dir the cwd
+// b/c npm run start doesn't cd into src/ to run this
+// and if we aren't in its cwd, all relative paths will break
+process.chdir(__dirname);
+
+let host;
+let databaseConfig;
+
+// fly.io sets NODE_ENV to production automatically, otherwise it's unset when running locally
+if (process.env.NODE_ENV == "production") {
+	host = "0.0.0.0";
+	databaseConfig = { connectionString: process.env.DATABASE_URL };
+} else {
+	host = "localhost";
+	let { PGUSER, PGPASSWORD, PGDATABASE, PGHOST, PGPORT } = process.env;
+	databaseConfig = { PGUSER, PGPASSWORD, PGDATABASE, PGHOST, PGPORT };
+}
+
 const http = require('http');
 const WebSocket = require('ws');
 const path = require('path');
@@ -51,6 +70,6 @@ wss.on('connection', (ws, req) => {
     });
 });
 
-server.listen(PORT, () => {
-    console.log(`Listening at Port ${PORT}`);
+server.listen(PORT, host, () => {
+    console.log(`http://${host}:${PORT}`);
 });
