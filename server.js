@@ -6,9 +6,7 @@ let { Pool } = require("pg");
 process.chdir(__dirname);
 
 let host;
-let databaseConfig;
 
-// test
 // fly.io sets NODE_ENV to production automatically, otherwise it's unset when running locally
 if (process.env.NODE_ENV == "production") {
 	host = "0.0.0.0";
