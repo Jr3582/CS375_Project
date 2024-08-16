@@ -4,6 +4,8 @@ class GameScene extends Phaser.Scene {
         this.bulletGroup = null;
         this.player = null;
         this.otherPlayers = {};
+        this.ammoTypeText = null;
+        this.ammoCountText = null;
     }
 
     preload() {
@@ -15,14 +17,21 @@ class GameScene extends Phaser.Scene {
     create() {
         this.add.image(400, 300, "background").setDisplaySize(800, 600); 
 
-        // Initialize bullet group
-        this.bulletGroup = new BulletGroup(this);
-        this.addEvents();
-
         // Create player
         this.player = this.add.rectangle(400, 300, 50, 50, 0x00ff00);
         this.physics.add.existing(this.player);
         this.player.body.setCollideWorldBounds(true);
+        this.player.setData('ammo', 25);
+        this.player.setData('maxAmmo', 50);
+        this.player.setData('bulletState', 0);
+        this.player.setData('lastFireTime', 0);
+        this.player.setData('fireRate', 250);
+
+        // Initialize bullet group
+        this.bulletGroup = new BulletGroup(this);
+        this.addEvents();
+        this.ammoTypeText = this.add.text(650, 550, 'Ammo Type:' + (this.player.getData('bulletState') + 1).toString(), { color: 'white', fontSize: '15px '});
+        this.ammoCountText = this.add.text(650, 570, 'Ammo Count:' + Math.trunc(this.player.getData('ammo')), { color: 'white', fontSize: '15px '});
 
         // Wall creation
         this.walls = this.physics.add.staticGroup();
@@ -110,9 +119,27 @@ class GameScene extends Phaser.Scene {
         
     // Mouse click event for shooting
     addEvents() {
+        window.addEventListener("keydown", (e) => {
+            switch (e.key) {
+                case "1":
+                    this.player.setData('bulletState', 0);
+                    break;                
+                case "2":
+                    this.player.setData('bulletState', 1);
+                    break;
+                case "3":
+                    this.player.setData('bulletState', 2);
+                    break;                
+                case "4":
+                    this.player.setData('bulletState', 3);
+                    break;
+                case "5":
+                    this.player.setData('bulletState', 4);
+                    break;
+            }
+        });
         this.input.on('pointerdown', pointer => {
-            let bulletState = 3;
-            this.shootBullet(pointer, bulletState);
+            this.shootBullet(pointer, this.player.getData('bulletState'));
         });
     }
 
@@ -139,6 +166,13 @@ class GameScene extends Phaser.Scene {
             const data = { id: this.socket.id, x: this.player.x, y: this.player.y };
             this.socket.send(JSON.stringify(data));
         }
+
+        if (this.player.getData('ammo') < this.player.getData('maxAmmo')) {
+            this.player.setData('ammo', this.player.getData('ammo') + 0.005);
+        }
+
+        this.ammoTypeText.setText('Ammo Type:' + (this.player.getData('bulletState') + 1).toString());
+        this.ammoCountText.setText('Ammo Count:' + Math.trunc(this.player.getData('ammo')));
     }
 }
 
