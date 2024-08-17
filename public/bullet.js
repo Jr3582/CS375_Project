@@ -34,19 +34,21 @@ class Bullet extends Phaser.Physics.Arcade.Sprite {
     }
 
     fire(player, pointerX, pointerY, bulletState) {
-        let ammo = player.getData('ammo');
-        player.setData('ammo', ammo-1);player.setData('ammo', ammo-1);
-        let x = player.x;
-        let y = player.y;
-		this.body.reset(x, y);
- 
-        this.setState(bulletState);
-		this.setActive(true);
-		this.setVisible(true);
+        let ammo = player.getData ? player.getData('ammo') : 0;
+    if (player.getData) {
+        player.setData('ammo', ammo - 1);
+    }
+    let x = player.x;
+    let y = player.y;
+    this.body.reset(x, y);
 
-        let velocityX = (pointerX - x) / Math.sqrt(Math.pow(pointerX - x, 2) + Math.pow(pointerY - y, 2));
-        let velocityY = (pointerY - y) / Math.sqrt(Math.pow(pointerX - x, 2) + Math.pow(pointerY - y, 2));
-        let scale = 500;
+    this.setState(bulletState);
+    this.setActive(true);
+    this.setVisible(true);
+
+    let velocityX = (pointerX - x) / Math.sqrt(Math.pow(pointerX - x, 2) + Math.pow(pointerY - y, 2));
+    let velocityY = (pointerY - y) / Math.sqrt(Math.pow(pointerX - x, 2) + Math.pow(pointerY - y, 2));
+    let scale = 500;
 
         // bulletState: 0 = normal, 1 = bounce, 2 = 4d fire, 3 = 3 spread fire, 4 inaccurate
         if (this.state === 1) {
@@ -86,8 +88,10 @@ class Bullet extends Phaser.Physics.Arcade.Sprite {
             velocityX = bulletVX/ Math.sqrt(Math.pow(bulletVX, 2) + Math.pow(bulletVY, 2));
             velocityY = bulletVY/ Math.sqrt(Math.pow(bulletVX, 2) + Math.pow(bulletVY, 2));
         }         
-        player.setData('lastFireTime', game.getTime());
-
+        if (player.getData) {
+            player.setData('lastFireTime', game.getTime());
+        }
+    
         this.setVelocity(velocityX * scale, velocityY * scale);
 	}    
 }

@@ -74,11 +74,12 @@ class GameScene extends Phaser.Scene {
             } else if (data.type === 'bullet' && data.id !== socket.id) {
                 const bullet = this.bulletGroup.getFirstDead(false);
                 if (bullet) {
-                    bullet.fire({ x: data.startX, y: data.startY }, data.targetX, data.targetY, data.state);
+                    bullet.fire(this.otherPlayers[data.id] || { x: data.startX, y: data.startY }, data.targetX, data.targetY, data.state);
                 } else {
                     console.error('No available bullet to fire');
                 }
-            } else {
+            }
+             else {
                 if (data.id !== socket.id) {
                     if (!this.otherPlayers[data.id]) {
                         const otherPlayer = this.add.rectangle(data.x, data.y, 50, 50, 0xff0000);
