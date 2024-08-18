@@ -6,6 +6,7 @@ class GameScene extends Phaser.Scene {
         this.otherPlayers = {};
         this.ammoTypeText = null;
         this.ammoCountText = null;
+        this.alive = true;  
     }
 
     preload() {
@@ -15,7 +16,7 @@ class GameScene extends Phaser.Scene {
     }
 
     create() {
-        this.add.image(400, 300, "background").setDisplaySize(800, 600); 
+        this.add.image(400, 300, "background").setDisplaySize(800, 600);
 
         // Create player
         this.player = this.add.rectangle(400, 300, 50, 50, 0x00ff00);
@@ -26,6 +27,7 @@ class GameScene extends Phaser.Scene {
         this.player.setData('bulletState', 0);
         this.player.setData('lastFireTime', 0);
         this.player.setData('fireRate', 250);
+        this.alive = true;  
 
         // Initialize bullet group
         this.bulletGroup = new BulletGroup(this);
@@ -52,8 +54,27 @@ class GameScene extends Phaser.Scene {
             }
         });
 
+        // Add collision detection between players and bullets
+        this.physics.add.overlap(this.player, this.bulletGroup, this.playerHit, null, this);
+
         // Setup WebSocket connection and event listeners
         this.setupWebSocket();
+    }
+
+    playerHit(player, bullet) {
+        if (bullet.active && bullet.visible && this.alive && bullet.ownerId !== this.socket.id) {
+            // Handle player "death"
+            console.log('Player hit by bullet!');
+            player.destroy();  
+            this.alive = false;  
+
+            // Send a message to the server to notify other players
+            const deathData = {
+                type: 'death',
+                id: this.socket.id
+            };
+            this.socket.send(JSON.stringify(deathData));
+        }
     }
 
     setupWebSocket() {
@@ -67,7 +88,7 @@ class GameScene extends Phaser.Scene {
                 message = await event.data.text();
             }
             const data = JSON.parse(message);
-        
+
             if (data.type === 'init') {
                 socket.id = data.id;
                 console.log(`Assigned ID: ${socket.id}`);
@@ -78,8 +99,12 @@ class GameScene extends Phaser.Scene {
                 } else {
                     console.error('No available bullet to fire');
                 }
-            }
-             else {
+            } else if (data.type === 'death') {
+                if (this.otherPlayers[data.id]) {
+                    this.otherPlayers[data.id].destroy();
+                    delete this.otherPlayers[data.id];
+                }
+            } else {
                 if (data.id !== socket.id) {
                     if (!this.otherPlayers[data.id]) {
                         const otherPlayer = this.add.rectangle(data.x, data.y, 50, 50, 0xff0000);
@@ -91,7 +116,7 @@ class GameScene extends Phaser.Scene {
                 }
             }
         };
-        
+
         socket.onopen = () => {
             console.log(`Connected to WebSocket server in lobby ${window.lobbyCode}`);
         };
@@ -104,23 +129,27 @@ class GameScene extends Phaser.Scene {
     }
 
     shootBullet(pointer, bulletState) {
-        const bullet = this.bulletGroup.fireBullet(this.player, pointer.x, pointer.y, bulletState);
-    
-        const bulletData = {
-            type: 'bullet',
-            id: this.socket.id,
-            startX: this.player.x,
-            startY: this.player.y,
-            targetX: pointer.x,
-            targetY: pointer.y,
-            state: bulletState
-        };
-        this.socket.send(JSON.stringify(bulletData));
+        if (this.player && this.alive) { 
+            this.player.setData('id', this.socket.id); 
+            const bullet = this.bulletGroup.fireBullet(this.player, pointer.x, pointer.y, bulletState);
+
+            const bulletData = {
+                type: 'bullet',
+                id: this.socket.id,
+                startX: this.player.x,
+                startY: this.player.y,
+                targetX: pointer.x,
+                targetY: pointer.y,
+                state: bulletState
+            };
+            this.socket.send(JSON.stringify(bulletData));
+        }
     }
-        
-    // Mouse click event for shooting
+
     addEvents() {
         window.addEventListener("keydown", (e) => {
+            if (!this.alive) return;  
+
             switch (e.key) {
                 case "1":
                     this.player.setData('bulletState', 0);
@@ -139,6 +168,7 @@ class GameScene extends Phaser.Scene {
                     break;
             }
         });
+
         this.input.on('pointerdown', pointer => {
             this.shootBullet(pointer, this.player.getData('bulletState'));
         });
@@ -147,20 +177,23 @@ class GameScene extends Phaser.Scene {
     update() {
         let moved = false;
 
-        this.player.body.setVelocity(0);
-        if (this.cursors.left.isDown) {
-            this.player.body.setVelocityX(-160);
-            moved = true;
-        } else if (this.cursors.right.isDown) {
-            this.player.body.setVelocityX(160);
-            moved = true;
-        }
-        if (this.cursors.up.isDown) {
-            this.player.body.setVelocityY(-160);
-            moved = true;
-        } else if (this.cursors.down.isDown) {
-            this.player.body.setVelocityY(160);
-            moved = true;
+        if (this.player && this.player.body && this.alive) {
+            this.player.body.setVelocity(0);
+
+            if (this.cursors.left.isDown) {
+                this.player.body.setVelocityX(-160);
+                moved = true;
+            } else if (this.cursors.right.isDown) {
+                this.player.body.setVelocityX(160);
+                moved = true;
+            }
+            if (this.cursors.up.isDown) {
+                this.player.body.setVelocityY(-160);
+                moved = true;
+            } else if (this.cursors.down.isDown) {
+                this.player.body.setVelocityY(160);
+                moved = true;
+            }
         }
 
         if (moved) {
@@ -168,12 +201,14 @@ class GameScene extends Phaser.Scene {
             this.socket.send(JSON.stringify(data));
         }
 
-        if (this.player.getData('ammo') < this.player.getData('maxAmmo')) {
+        if (this.player && this.alive && this.player.getData('ammo') < this.player.getData('maxAmmo')) {
             this.player.setData('ammo', this.player.getData('ammo') + 0.005);
         }
 
-        this.ammoTypeText.setText('Ammo Type:' + (this.player.getData('bulletState') + 1).toString());
-        this.ammoCountText.setText('Ammo Count:' + Math.trunc(this.player.getData('ammo')));
+        if (this.ammoTypeText && this.ammoCountText) {
+            this.ammoTypeText.setText('Ammo Type:' + (this.player.getData('bulletState') + 1).toString());
+            this.ammoCountText.setText('Ammo Count:' + Math.trunc(this.player.getData('ammo')));
+        }
     }
 }
 
