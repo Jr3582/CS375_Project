@@ -31,6 +31,7 @@ class Bullet extends Phaser.Physics.Arcade.Sprite {
     constructor(scene, x, y) {
         super(scene, x, y, 'bullet');
         this.setScale(0.1);
+        this.ownerId = null;
     }
 
     fire(player, pointerX, pointerY, bulletState) {
@@ -45,6 +46,7 @@ class Bullet extends Phaser.Physics.Arcade.Sprite {
     this.setState(bulletState);
     this.setActive(true);
     this.setVisible(true);
+    this.ownerId = player.getData('id');
 
     let velocityX = (pointerX - x) / Math.sqrt(Math.pow(pointerX - x, 2) + Math.pow(pointerY - y, 2));
     let velocityY = (pointerY - y) / Math.sqrt(Math.pow(pointerX - x, 2) + Math.pow(pointerY - y, 2));
