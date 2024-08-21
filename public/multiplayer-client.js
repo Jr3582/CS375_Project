@@ -78,7 +78,7 @@ class GameScene extends Phaser.Scene {
     }
 
     setupWebSocket() {
-        const socket = new WebSocket(`ws://localhost:3000?lobby=${window.lobbyCode}`);
+        const socket = new WebSocket(`wss://${window.location.host.replace("https://", "")}?lobby=${window.lobbyCode}`);
 
         socket.onmessage = async (event) => {
             let message;
