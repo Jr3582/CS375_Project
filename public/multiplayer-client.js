@@ -61,12 +61,23 @@ class GameScene extends Phaser.Scene {
         this.setupWebSocket();
     }
 
+    playerRespawn(player) {
+        player.x = 400;
+        player.y = 400;
+        player.setActive;
+        player.setVisible;
+        this.alive = true;
+    }
+
     playerHit(player, bullet) {
         if (bullet.active && bullet.visible && this.alive && bullet.ownerId !== this.socket.id) {
             // Handle player "death"
             console.log('Player hit by bullet!');
-            player.destroy();  
-            this.alive = false;  
+            //player.destroy();
+            player.setActive(false);
+            player.setVisible(false);
+            this.alive = false;
+            setTimeout(this.playerRespawn(player), 5000);
 
             // Send a message to the server to notify other players
             const deathData = {
@@ -101,8 +112,10 @@ class GameScene extends Phaser.Scene {
                 }
             } else if (data.type === 'death') {
                 if (this.otherPlayers[data.id]) {
-                    this.otherPlayers[data.id].destroy();
-                    delete this.otherPlayers[data.id];
+                    this.otherPlayers[data.id].setActive(false);
+                    this.otherPlayers[data.id].setActive(false);
+                    setTimeout(this.playerRespawn(this.otherPlayers[data.id]), 5000);
+                    //delete this.otherPlayers[data.id];
                 }
             } else {
                 if (data.id !== socket.id) {
