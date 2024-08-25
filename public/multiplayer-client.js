@@ -11,15 +11,15 @@ class GameScene extends Phaser.Scene {
 
     preload() {
         this.load.image('bullet', 'assets/bullet.png');
-        this.load.image("background", "assets/background.jpg");
-        this.load.image("wall", "assets/wall.png");
+
+        //tile map stuff
+        this.load.spritesheet('tiles', 'assets/tileSet.png', { frameWidth: 32, frameHeight: 32 });
+        this.load.tilemapTiledJSON('map', 'assets/tilemap.json');
     }
 
     create() {
-        this.add.image(400, 300, "background").setDisplaySize(800, 600);
-
         // Create player
-        this.player = this.add.rectangle(400, 300, 50, 50, 0x00ff00);
+        this.player = this.add.rectangle(400, 300, 25, 25, 0x00ff00);
         this.physics.add.existing(this.player);
         this.player.body.setCollideWorldBounds(true);
         this.player.setData('ammo', 25);
@@ -29,23 +29,39 @@ class GameScene extends Phaser.Scene {
         this.player.setData('fireRate', 250);
         this.alive = true;  
 
+        // tile map stuff
+        console.log('Creating tilemap');
+        const map = this.make.tilemap({ key: 'map' });
+        console.log(map);
+        const tileset = map.addTilesetImage('tileset', 'tiles');
+
+        const groundLayer = map.createLayer('Floor Layer', tileset, 0, 0);
+        groundLayer.setDepth(0);
+
+        const wallsLayer = map.createLayer('Object Layer', tileset, 0, 0);
+        wallsLayer.setDepth(2);
+
+        this.player.setDepth(1);
+
+        // Set collision for the walls layer
+        wallsLayer.setCollisionByExclusion([-1]);
+
         // Initialize bullet group
         this.bulletGroup = new BulletGroup(this);
         this.addEvents();
-        this.ammoTypeText = this.add.text(650, 550, 'Ammo Type:' + (this.player.getData('bulletState') + 1).toString(), { color: 'white', fontSize: '15px '});
-        this.ammoCountText = this.add.text(650, 570, 'Ammo Count:' + Math.trunc(this.player.getData('ammo')), { color: 'white', fontSize: '15px '});
+        this.ammoTypeText = this.add.text(480, 590, 'Ammo Type:' + (this.player.getData('bulletState') + 1).toString(), { color: 'white', fontSize: '15px ', fontWeight: 'bold'});
+        this.ammoCountText = this.add.text(480, 610, 'Ammo Count:' + Math.trunc(this.player.getData('ammo')), { color: 'white', fontSize: '15px ', fontWeight: 'bold'});
+        this.ammoTypeText.setDepth(3);
+        this.ammoCountText.setDepth(3);
 
         // Wall creation
         this.walls = this.physics.add.staticGroup();
-        this.walls.create(200, 300, 'wall').setOrigin(0.5, 0.5).setDisplaySize(200, 20).refreshBody();
-        this.walls.create(300, 400, 'wall').setOrigin(0.5, 0.5).setDisplaySize(20, 200).refreshBody();
 
         // Set up cursor keys for movement
         this.cursors = this.input.keyboard.createCursorKeys();
 
         // Set up physics
-        this.physics.add.collider(this.player, this.walls);
-
+        this.physics.add.collider(this.player, wallsLayer);
         // Collision between obstacles and bullets
         this.physics.add.collider(this.walls, this.bulletGroup, (object1, object2) => {
             if (object2.state !== 1) {
@@ -107,7 +123,7 @@ class GameScene extends Phaser.Scene {
             } else {
                 if (data.id !== socket.id) {
                     if (!this.otherPlayers[data.id]) {
-                        const otherPlayer = this.add.rectangle(data.x, data.y, 50, 50, 0xff0000);
+                        const otherPlayer = this.add.rectangle(data.x, data.y, 25, 25, 0xff0000);
                         this.physics.add.existing(otherPlayer);
                         this.otherPlayers[data.id] = otherPlayer;
                     } else {
@@ -215,8 +231,8 @@ class GameScene extends Phaser.Scene {
 // Game configuration
 const config = {
     type: Phaser.AUTO,
-    width: 800,
-    height: 600,
+    width: 640,
+    height: 640,
     scene: [GameScene],
     physics: {
         default: 'arcade',
