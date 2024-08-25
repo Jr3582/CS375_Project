@@ -16,11 +16,7 @@ class BulletGroup extends Phaser.Physics.Arcade.Group {
     }
 
     //gets bullet to fire
-    fireBullet(player, pointerX, pointerY, bulletState) {
-        if ((game.getTime() - player.getData('lastFireTime') < player.getData('fireRate')) || player.getData('ammo') < 1 || (player.getData('ammo') < 4 && bulletState === 2) || 
-        (player.getData('ammo') < 3 && bulletState === 3)) { 
-            return; 
-        }
+    fireBullet(player, pointerX, pointerY, bulletState, id) {
 		const bullet = this.getFirstDead(false);
 		if (bullet) {
 			bullet.fire(player, pointerX, pointerY, bulletState);
@@ -34,23 +30,24 @@ class Bullet extends Phaser.Physics.Arcade.Sprite {
         this.ownerId = null;
     }
 
-    fire(player, pointerX, pointerY, bulletState) {
+    fire(player, pointerX, pointerY, bulletState, id) {
         let ammo = player.getData ? player.getData('ammo') : 0;
-    if (player.getData) {
-        player.setData('ammo', ammo - 1);
-    }
-    let x = player.x;
-    let y = player.y;
-    this.body.reset(x, y);
+        if (player.getData) {
+            player.setData('ammo', ammo - 1);
+        }
+        let x = player.x;
+        let y = player.y;
+        this.body.reset(x, y);
 
-    this.setState(bulletState);
-    this.setActive(true);
-    this.setVisible(true);
-    this.ownerId = player.getData('id');
+        this.setState(bulletState);
+        this.setActive(true);
+        this.setVisible(true);
+        this.ownerId = player.getData('id');
+        this.setData('player', id)
 
-    let velocityX = (pointerX - x) / Math.sqrt(Math.pow(pointerX - x, 2) + Math.pow(pointerY - y, 2));
-    let velocityY = (pointerY - y) / Math.sqrt(Math.pow(pointerX - x, 2) + Math.pow(pointerY - y, 2));
-    let scale = 500;
+        let velocityX = (pointerX - x) / Math.sqrt(Math.pow(pointerX - x, 2) + Math.pow(pointerY - y, 2));
+        let velocityY = (pointerY - y) / Math.sqrt(Math.pow(pointerX - x, 2) + Math.pow(pointerY - y, 2));
+        let scale = 500;
 
         // bulletState: 0 = normal, 1 = bounce, 2 = 4d fire, 3 = 3 spread fire, 4 inaccurate
         if (this.state === 1) {
@@ -93,7 +90,6 @@ class Bullet extends Phaser.Physics.Arcade.Sprite {
         if (player.getData) {
             player.setData('lastFireTime', game.getTime());
         }
-    
         this.setVelocity(velocityX * scale, velocityY * scale);
-	}    
+    }    
 }
