@@ -6,7 +6,8 @@ class GameScene extends Phaser.Scene {
         this.otherPlayers = {};
         this.ammoTypeText = null;
         this.ammoCountText = null;
-        this.alive = true;  
+        this.healthText = null;
+        this.alive = true; 
     }
 
     preload() {
@@ -27,11 +28,15 @@ class GameScene extends Phaser.Scene {
         this.player.setData('bulletState', 0);
         this.player.setData('lastFireTime', 0);
         this.player.setData('fireRate', 250);
+        this.player.setData('health', 3);
+        this.player.setData('points', 0);
+
         this.alive = true;  
 
         // Initialize bullet group
         this.bulletGroup = new BulletGroup(this);
         this.addEvents();
+        this.healthText = this.add.text(650, 530, 'Health:' + (this.player.getData('health')), { color: 'white', fontSize: '15px '});
         this.ammoTypeText = this.add.text(650, 550, 'Ammo Type:' + (this.player.getData('bulletState') + 1).toString(), { color: 'white', fontSize: '15px '});
         this.ammoCountText = this.add.text(650, 570, 'Ammo Count:' + Math.trunc(this.player.getData('ammo')), { color: 'white', fontSize: '15px '});
 
@@ -47,10 +52,10 @@ class GameScene extends Phaser.Scene {
         this.physics.add.collider(this.player, this.walls);
 
         // Collision between obstacles and bullets
-        this.physics.add.collider(this.walls, this.bulletGroup, (object1, object2) => {
-            if (object2.state !== 1) {
-                object2.setActive(false);
-                object2.setVisible(false);
+        this.physics.add.collider(this.walls, this.bulletGroup, (wall, bullet) => {
+            if (bullet.state !== 1) {
+                bullet.setActive(false);
+                bullet.setVisible(false);
             }
         });
 
@@ -63,22 +68,31 @@ class GameScene extends Phaser.Scene {
 
     playerHit(player, bullet) {
         if (bullet.active && bullet.visible && this.alive && bullet.ownerId !== this.socket.id) {
+            player.setData('health', player.getData('health') - 1);
+            if (player.getData('health') < 1) {
             // Handle player "death"
-            console.log('Player hit by bullet!');
-            player.destroy();  
-            this.alive = false;  
+                this.otherPlayers[bullet.getData('player')].setData('points', this.player.getData('points')+3);
 
-            // Send a message to the server to notify other players
-            const deathData = {
-                type: 'death',
-                id: this.socket.id
-            };
-            this.socket.send(JSON.stringify(deathData));
+                console.log('Player hit by bullet!');
+                player.setData('points', player.getData('points')-1);
+                player.destroy();  
+                this.alive = false;  
+
+                // Send a message to the server to notify other players
+                const deathData = {
+                    type: 'death',
+                    id: this.socket.id,
+                };
+                this.socket.send(JSON.stringify(deathData));
+            } 
+            bullet.setActive(false);
+            bullet.setVisible(false);
         }
     }
 
     setupWebSocket() {
-        const socket = new WebSocket(`wss://${window.location.host.replace("https://", "")}?lobby=${window.lobbyCode}`);
+        //const socket = new WebSocket(`wss://${window.location.host.replace("https://", "")}?lobby=${window.lobbyCode}`);
+        const socket = new WebSocket(`ws://localhost:3000?lobby=${window.lobbyCode}`);
 
         socket.onmessage = async (event) => {
             let message;
@@ -95,7 +109,7 @@ class GameScene extends Phaser.Scene {
             } else if (data.type === 'bullet' && data.id !== socket.id) {
                 const bullet = this.bulletGroup.getFirstDead(false);
                 if (bullet) {
-                    bullet.fire(this.otherPlayers[data.id] || { x: data.startX, y: data.startY }, data.targetX, data.targetY, data.state);
+                    bullet.fire(this.otherPlayers[data.id] || { x: data.startX, y: data.startY }, data.targetX, data.targetY, data.state, data.id);
                 } else {
                     console.error('No available bullet to fire');
                 }
@@ -130,8 +144,12 @@ class GameScene extends Phaser.Scene {
 
     shootBullet(pointer, bulletState) {
         if (this.player && this.alive) { 
+            if ((game.getTime() - this.player.getData('lastFireTime') < this.player.getData('fireRate')) || this.player.getData('ammo') < 1 || (this.player.getData('ammo') < 4 && bulletState === 2) || 
+            (this.player.getData('ammo') < 3 && bulletState === 3)) { 
+                return; 
+            }
             this.player.setData('id', this.socket.id); 
-            const bullet = this.bulletGroup.fireBullet(this.player, pointer.x, pointer.y, bulletState);
+            const bullet = this.bulletGroup.fireBullet(this.player, pointer.x, pointer.y, bulletState, this.socket.id);
 
             const bulletData = {
                 type: 'bullet',
@@ -205,10 +223,12 @@ class GameScene extends Phaser.Scene {
             this.player.setData('ammo', this.player.getData('ammo') + 0.005);
         }
 
-        if (this.ammoTypeText && this.ammoCountText) {
+        if (this.ammoTypeText && this.ammoCountText && this.healthText) {
             this.ammoTypeText.setText('Ammo Type:' + (this.player.getData('bulletState') + 1).toString());
             this.ammoCountText.setText('Ammo Count:' + Math.trunc(this.player.getData('ammo')));
+            this.healthText.setText('Health:' + this.player.getData('health'));
         }
+
     }
 }
 
