@@ -19,7 +19,7 @@ class BulletGroup extends Phaser.Physics.Arcade.Group {
     fireBullet(player, pointerX, pointerY, bulletState, id) {
 		const bullet = this.getFirstDead(false);
 		if (bullet) {
-			bullet.fire(player, pointerX, pointerY, bulletState);
+			bullet.fire(player, pointerX, pointerY, bulletState, id);
 		}
 	}
 }
@@ -42,8 +42,8 @@ class Bullet extends Phaser.Physics.Arcade.Sprite {
         this.setState(bulletState);
         this.setActive(true);
         this.setVisible(true);
-        this.ownerId = player.getData('id');
-        this.setData('player', id)
+        //this.ownerId = player.getData('id');
+        this.setData('player', id);
 
         let velocityX = (pointerX - x) / Math.sqrt(Math.pow(pointerX - x, 2) + Math.pow(pointerY - y, 2));
         let velocityY = (pointerY - y) / Math.sqrt(Math.pow(pointerX - x, 2) + Math.pow(pointerY - y, 2));
@@ -53,28 +53,28 @@ class Bullet extends Phaser.Physics.Arcade.Sprite {
         if (this.state === 1) {
             this.setBounce(true);
         } else if (this.state === 2) {
-            this.scene.bulletGroup.fireBullet(player, pointerX, pointerY, 21);
+            this.scene.bulletGroup.fireBullet(player, pointerX, pointerY, 21, id);
         } else if (this.state === 3) {
-            this.scene.bulletGroup.fireBullet(player, pointerX, pointerY, 31);
+            this.scene.bulletGroup.fireBullet(player, pointerX, pointerY, 31, id);
         } else if (this.state === 4) {
             let randX = Math.random() * 100 - 50;
             let randY = Math.random() * 100 - 50;
             velocityX = (pointerX + randX - x) / Math.sqrt(Math.pow(pointerX + randX - x, 2) + Math.pow(pointerY + randY - y, 2));;
             velocityY = (pointerY + randY - y) / Math.sqrt(Math.pow(pointerX + randX - x, 2) + Math.pow(pointerY + randY - y, 2));
         } else if (this.state === 21) {
-            this.scene.bulletGroup.fireBullet(player, pointerX, pointerY, 22);
+            this.scene.bulletGroup.fireBullet(player, pointerX, pointerY, 22, id);
             let tempVelocity = velocityX
             velocityX = velocityY;
             velocityY = -tempVelocity;
         } else if (this.state === 22) {
-            this.scene.bulletGroup.fireBullet(player, pointerX, pointerY, 23);
+            this.scene.bulletGroup.fireBullet(player, pointerX, pointerY, 23, id);
             let tempVelocity = velocityX
             velocityX = -velocityY;
             velocityY = tempVelocity;
         } else if (this.state === 23) {
             scale = -500;
         } else if ( this.state === 31) {
-            this.scene.bulletGroup.fireBullet(player, pointerX, pointerY, 32);
+            this.scene.bulletGroup.fireBullet(player, pointerX, pointerY, 32, id);
             let bulletRotAngle = Math.PI/6;
             let bulletVX = (Math.cos(bulletRotAngle) * (pointerX - x)) - (Math.sin(bulletRotAngle) * (pointerY-y)) ;
             let bulletVY = (Math.sin(bulletRotAngle) * (pointerX - x)) + (Math.cos(bulletRotAngle) * (pointerY-y)) ;

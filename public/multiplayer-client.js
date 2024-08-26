@@ -91,11 +91,15 @@ class GameScene extends Phaser.Scene {
     }
 
     playerHit(player, bullet) {
-        if (bullet.active && bullet.visible && this.alive && bullet.ownerId !== this.socket.id) {
+        if (bullet.active && bullet.visible && this.alive && bullet.getData('player') !== this.socket.id) {
             player.setData('health', player.getData('health') - 1);
             if (player.getData('health') < 1) {
             // Handle player "death"
-                this.otherPlayers[bullet.getData('player')].setData('points', this.player.getData('points')+3);
+
+                console.log(this.otherPlayers);
+                console.log(bullet.getData('player'));
+
+                this.otherPlayers[bullet.getData('player')].setData('points', player.getData('points')+3);
 
                 console.log('Player hit by bullet!');
                 player.setData('points', player.getData('points')-1);
@@ -118,8 +122,8 @@ class GameScene extends Phaser.Scene {
     }
 
     setupWebSocket() {
-        //const socket = new WebSocket(`wss://${window.location.host.replace("https://", "")}?lobby=${window.lobbyCode}`);
-        const socket = new WebSocket(`ws://localhost:3000?lobby=${window.lobbyCode}`);
+        const socket = new WebSocket(`wss://${window.location.host.replace("https://", "")}?lobby=${window.lobbyCode}`);
+        //const socket = new WebSocket(`ws://localhost:3000?lobby=${window.lobbyCode}`);
 
         socket.onmessage = async (event) => {
             let message;
