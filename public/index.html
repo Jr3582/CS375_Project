@@ -4,53 +4,54 @@
 <head>
     <title>2D Shooter</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.80.1/phaser.min.js"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin: 20px;
-        }
-
-        #gameContainer {
-            display: none;
-        }
-
-        button {
-            margin: 10px;
-            padding: 10px 20px;
-            font-size: 16px;
-        }
-
-        input {
-            margin: 10px;
-            padding: 5px;
-            font-size: 16px;
-        }
-    </style>
-</head>
+    <link rel="stylesheet" href="style.css"></head>
 
 <body>
-    <h1>2D Shooter</h1>
-    <p>Enter a lobby code to join a specific lobby or click "Play Now" to start a game immediately.</p>
-    <p>Lobby codes: red, blue, green, yellow, purple</p>
-    <div id="lobbyContainer">
-        <input type="text" id="lobbyCode" placeholder="Enter Lobby Code (red, blue, green)">
-        <button id="joinLobbyBtn">Join Lobby</button>
-        <button id="playNowBtn">Play Now</button>
+    <video id="background-video" autoplay loop muted>
+        <source src="./assets/index-bg.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+
+    <div id="container">
+        <h1>2D Shooter</h1>
+        <p>Enter a lobby code to join a specific lobby or click "Play Now" to start a game immediately.</p>
+        <div id="lobbyContainer">
+            <button id="generateCodeBtn">Get a New Lobby Code</button>
+            <div id="newLobbyCode"></div>
+            <br>
+            <input type="text" id="lobbyCode" placeholder="Enter Lobby Code">
+            <button id="joinLobbyBtn">Join Lobby</button>
+            <button id="playNowBtn">Play Now</button>
+        </div>
     </div>
 
     <script>
+        function generateLobbyCode() {
+            const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            let code = '';
+            for (let i = 0; i < 4; i++) {
+                code += letters.charAt(Math.floor(Math.random() * letters.length));
+            }
+            return code;
+        }
+
         document.getElementById('joinLobbyBtn').addEventListener('click', () => {
             const lobbyCode = document.getElementById('lobbyCode').value;
-            if (['red', 'blue', 'green', 'yellow', 'purple'].includes(lobbyCode)) {
+            if (lobbyCode) {
                 window.location.href = `gameboard.html?lobby=${lobbyCode}`;
             } else {
-                alert('Please enter a valid lobby code (red, blue, green)');
+                alert('Please enter a lobby code.');
             }
         });
 
         document.getElementById('playNowBtn').addEventListener('click', () => {
             window.location.href = `gameboard.html`;
+        });
+
+        document.getElementById('generateCodeBtn').addEventListener('click', () => {
+            const newCode = generateLobbyCode();
+            document.getElementById('newLobbyCode').textContent = `Your new lobby code: ${newCode}`;
+            document.getElementById('lobbyCode').value = newCode;
         });
     </script>
 </body>
