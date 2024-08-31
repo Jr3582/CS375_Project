@@ -7,13 +7,14 @@ class GameScene extends Phaser.Scene {
         this.ammoTypeText = null;
         this.ammoCountText = null;
         this.healthText = null;
+        this.wallsLayer = null;
         this.alive = true; 
     }
 
     preload() {
         this.load.image('bullet', 'assets/bullet.png');
 
-        //tile map stuff
+        // Tile map setup
         this.load.spritesheet('tiles', 'assets/tileSet.png', { frameWidth: 32, frameHeight: 32 });
         this.load.tilemapTiledJSON('map', 'assets/tilemap.json');
     }
@@ -33,7 +34,7 @@ class GameScene extends Phaser.Scene {
 
         this.alive = true;  
 
-        // tile map stuff
+        // Tile map setup
         console.log('Creating tilemap');
         const map = this.make.tilemap({ key: 'map' });
         console.log(map);
@@ -42,32 +43,33 @@ class GameScene extends Phaser.Scene {
         const groundLayer = map.createLayer('Floor Layer', tileset, 0, 0);
         groundLayer.setDepth(0);
 
-        const wallsLayer = map.createLayer('Object Layer', tileset, 0, 0);
-        wallsLayer.setDepth(2);
+        this.wallsLayer = map.createLayer('Object Layer', tileset, 0, 0);
+        this.wallsLayer.setDepth(2);
 
         this.player.setDepth(1);
 
         // Set collision for the walls layer
-        wallsLayer.setCollisionByExclusion([-1]);
+        this.wallsLayer.setCollisionByExclusion([-1]);
 
         // Initialize bullet group
         this.bulletGroup = new BulletGroup(this);
         this.addEvents();
-        this.healthText = this.add.text(650, 530, 'Health:' + (this.player.getData('health')), { color: 'white', fontSize: '15px '});
+
+        // Setup UI elements
+        this.healthText = this.add.text(650, 530, 'Health:' + this.player.getData('health'), { color: 'white', fontSize: '15px '});
         this.ammoTypeText = this.add.text(480, 590, 'Ammo Type:' + (this.player.getData('bulletState') + 1).toString(), { color: 'white', fontSize: '15px ', fontWeight: 'bold'});
         this.ammoCountText = this.add.text(480, 610, 'Ammo Count:' + Math.trunc(this.player.getData('ammo')), { color: 'white', fontSize: '15px ', fontWeight: 'bold'});
         this.ammoTypeText.setDepth(3);
         this.ammoCountText.setDepth(3);
 
-        // Wall creation
+        // Wall collision group
         this.walls = this.physics.add.staticGroup();
 
         // Set up cursor keys for movement
         this.cursors = this.input.keyboard.createCursorKeys();
 
         // Set up physics
-        this.physics.add.collider(this.player, wallsLayer);
-        // Collision between obstacles and bullets
+        this.physics.add.collider(this.player, this.wallsLayer);  
         this.physics.add.collider(this.walls, this.bulletGroup, (wall, bullet) => {
             if (bullet.state !== 1) {
                 bullet.setActive(false);
@@ -82,47 +84,74 @@ class GameScene extends Phaser.Scene {
         this.setupWebSocket();
     }
 
-    playerRespawn(player) {
-        player.x = 400;
-        player.y = 400;
-        player.setActive;
-        player.setVisible;
+    respawnPlayer() {
+        if (this.player) {
+            this.player.destroy();
+        }
+    
+        // Recreate the player
+        this.player = this.add.rectangle(400, 300, 25, 25, 0x00ff00);
+        this.physics.add.existing(this.player);
+    
+        // Reinitialize the player's physics body properties
+        this.player.body.setCollideWorldBounds(true);
+        this.player.body.setImmovable(false); 
+        this.player.body.setVelocity(0, 0); 
+        this.player.body.setBounce(0); 
+    
+        // Reset player data
+        this.player.setData('ammo', 25);
+        this.player.setData('maxAmmo', 50);
+        this.player.setData('bulletState', 0);
+        this.player.setData('lastFireTime', 0);
+        this.player.setData('fireRate', 250);
+        this.player.setData('health', 3);
+        this.player.setData('points', 0);
         this.alive = true;
+    
+        // Reapply collision with wallsLayer
+        this.physics.add.collider(this.player, this.wallsLayer);
+    
+        // Force physics update to ensure collision is recognized
+        this.physics.world.collide(this.player, this.wallsLayer);
+
+        // Update UI
+        this.healthText.setText('Health:' + this.player.getData('health'));
+        this.ammoCountText.setText('Ammo Count:' + Math.trunc(this.player.getData('ammo')));
+        this.ammoTypeText.setText('Ammo Type:' + (this.player.getData('bulletState') + 1).toString());
     }
+
+    
 
     playerHit(player, bullet) {
         if (bullet.active && bullet.visible && this.alive && bullet.getData('player') !== this.socket.id) {
             player.setData('health', player.getData('health') - 1);
             if (player.getData('health') < 1) {
-            // Handle player "death"
-
-                console.log(this.otherPlayers);
-                console.log(bullet.getData('player'));
-
-                this.otherPlayers[bullet.getData('player')].setData('points', player.getData('points')+3);
-
+                this.otherPlayers[bullet.getData('player')].setData('points', this.player.getData('points')+3);
                 console.log('Player hit by bullet!');
                 player.setData('points', player.getData('points')-1);
-                //player.destroy();
-                player.setActive(false);
-                player.setVisible(false);
+                player.destroy();
                 this.alive = false;
-                setTimeout(this.playerRespawn(player), 5000);
 
-                // Send a message to the server to notify other players
                 const deathData = {
                     type: 'death',
                     id: this.socket.id,
                 };
                 this.socket.send(JSON.stringify(deathData));
             } 
-            bullet.setActive(false);
-            bullet.setVisible(false);
+
+            setTimeout(() => {
+                this.respawnPlayer();
+            }, 5000);
+
         }
     }
 
     setupWebSocket() {
+        //Uncomment the below line when you push the changes, comment it out when you are testing locally
         const socket = new WebSocket(`wss://${window.location.host.replace("https://", "")}?lobby=${window.lobbyCode}`);
+
+        //Uncomment the below line when you are testing locally, comment it out when you push the changes
         //const socket = new WebSocket(`ws://localhost:3000?lobby=${window.lobbyCode}`);
 
         socket.onmessage = async (event) => {
@@ -146,10 +175,12 @@ class GameScene extends Phaser.Scene {
                 }
             } else if (data.type === 'death') {
                 if (this.otherPlayers[data.id]) {
-                    this.otherPlayers[data.id].setActive(false);
-                    this.otherPlayers[data.id].setActive(false);
-                    setTimeout(this.playerRespawn(this.otherPlayers[data.id]), 5000);
-                    //delete this.otherPlayers[data.id];
+                    //this.otherPlayers[data.id].setActive(false);
+                    //this.otherPlayers[data.id].setActive(false);
+                    const newPayer = this.otherPlayers[data.id];
+                    this.otherPlayers[data.id].destroy();
+                    delete this.otherPlayers[data.id];
+                    //setTimeout(this.respawnPlayer(), 2000);
                 }
             } else {
                 if (data.id !== socket.id) {
