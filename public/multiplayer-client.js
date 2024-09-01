@@ -106,8 +106,14 @@ class GameScene extends Phaser.Scene {
         // Wall collision group
         this.walls = this.physics.add.staticGroup();
 
-        // Set up cursor keys for movement
-        this.cursors = this.input.keyboard.createCursorKeys();
+        // Set up WASD keys for movement
+        this.cursors = {
+            up: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W),
+            down: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S),
+            left: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A),
+            right: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D)
+        };
+
 
         // Set up physics
         this.physics.add.collider(this.player, this.wallsLayer);  
@@ -178,25 +184,27 @@ class GameScene extends Phaser.Scene {
             const otherPlayer = this.otherPlayers[bullet.getData('player')];
 
             if (otherPlayer) {
-            player.setData('health', player.getData('health') - 1);
-            if (player.getData('health') < 1) {
-                this.otherPlayers[bullet.getData('player')].setData('points', this.player.getData('points')+3);
-                console.log('Player hit by bullet!');
-                player.setData('points', player.getData('points')-1);
-                player.destroy();
-                this.alive = false;
+                player.setData('health', player.getData('health') - 1);
+                bullet.setActive(false);
+                bullet.setVisible(false);
 
-                const deathData = {
-                    type: 'death',
-                    id: this.socket.id,
-                };
-                this.socket.send(JSON.stringify(deathData));
-            } 
+                if (player.getData('health') < 1) {
+                    this.otherPlayers[bullet.getData('player')].setData('points', this.player.getData('points')+3);
+                    console.log('Player hit by bullet!');
+                    player.setData('points', player.getData('points')-1);
+                    player.destroy();
+                    this.alive = false;
 
-            setTimeout(() => {
-                this.respawnPlayer();
-            }, 5000);
-            
+                    const deathData = {
+                        type: 'death',
+                        id: this.socket.id,
+                    };
+                    this.socket.send(JSON.stringify(deathData));
+
+                    setTimeout(() => {
+                        this.respawnPlayer();
+                    }, 5000);
+                }
             } else {
                 console.log('Attempted to interact with an undefined player.');
             }
@@ -222,6 +230,26 @@ class GameScene extends Phaser.Scene {
             if (data.type === 'init') {
                 socket.id = data.id;
                 console.log(`Assigned ID: ${socket.id}`);
+
+                // Send the initial position to the server
+                const initData = {
+                    type: 'position',
+                    id: socket.id,
+                    x: this.player.x,
+                    y: this.player.y
+                };
+                socket.send(JSON.stringify(initData));
+
+            } else if (data.type === 'position') {
+                if (!this.otherPlayers[data.id]) {
+
+                    // Create new player at the specified position
+                    const otherPlayer = this.add.rectangle(data.x, data.y, 25, 25, 0xff0000);
+                    this.physics.add.existing(otherPlayer);
+                    this.otherPlayers[data.id] = otherPlayer;
+                } else {
+                    this.otherPlayers[data.id].setPosition(data.x, data.y);
+                }
             } else if (data.type === 'bullet' && data.id !== socket.id) {
                 const bullet = this.bulletGroup.getFirstDead(false);
                 if (bullet) {
@@ -231,12 +259,8 @@ class GameScene extends Phaser.Scene {
                 }
             } else if (data.type === 'death') {
                 if (this.otherPlayers[data.id]) {
-                    //this.otherPlayers[data.id].setActive(false);
-                    //this.otherPlayers[data.id].setActive(false);
-                    const newPayer = this.otherPlayers[data.id];
                     this.otherPlayers[data.id].destroy();
                     delete this.otherPlayers[data.id];
-                    //setTimeout(this.respawnPlayer(), 2000);
                 }
             } else {
                 if (data.id !== socket.id) {
