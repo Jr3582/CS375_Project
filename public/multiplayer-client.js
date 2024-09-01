@@ -240,15 +240,25 @@ class GameScene extends Phaser.Scene {
                 };
                 socket.send(JSON.stringify(initData));
 
-            } else if (data.type === 'position') {
-                if (!this.otherPlayers[data.id]) {
+                // Request positions of all other players
+                const requestData = {
+                    type: 'request_positions'
+                };
+                socket.send(JSON.stringify(requestData));
 
-                    // Create new player at the specified position
-                    const otherPlayer = this.add.rectangle(data.x, data.y, 25, 25, 0xff0000);
-                    this.physics.add.existing(otherPlayer);
-                    this.otherPlayers[data.id] = otherPlayer;
-                } else {
-                    this.otherPlayers[data.id].setPosition(data.x, data.y);
+            } else if (data.type === 'position') {
+
+                // Handle position data for new or existing players
+                if (data.id !== socket.id) {   
+                    if (!this.otherPlayers[data.id]) {
+                        // Create new player at the specified position
+                        const otherPlayer = this.add.rectangle(data.x, data.y, 25, 25, 0xff0000);
+                        this.physics.add.existing(otherPlayer);
+                        this.otherPlayers[data.id] = otherPlayer;
+                    } else {
+                        // Update existing player position
+                        this.otherPlayers[data.id].setPosition(data.x, data.y);
+                    }
                 }
             } else if (data.type === 'bullet' && data.id !== socket.id) {
                 const bullet = this.bulletGroup.getFirstDead(false);
