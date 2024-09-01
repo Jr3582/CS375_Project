@@ -53,6 +53,9 @@ class GameScene extends Phaser.Scene {
 
         // Initialize bullet group
         this.bulletGroup = new BulletGroup(this);
+        this.bulletGroup.children.iterate((bullet) => {
+            bullet.setBodySize(bullet.width * 0.2, bullet.height * 0.2, true); 
+        });
         this.addEvents();
 
         // Setup UI elements
@@ -70,7 +73,7 @@ class GameScene extends Phaser.Scene {
 
         // Set up physics
         this.physics.add.collider(this.player, this.wallsLayer);  
-        this.physics.add.collider(this.walls, this.bulletGroup, (wall, bullet) => {
+        this.physics.add.collider(this.bulletGroup, this.wallsLayer, (bullet, wall) => {
             if (bullet.state !== 1) {
                 bullet.setActive(false);
                 bullet.setVisible(false);
@@ -119,12 +122,24 @@ class GameScene extends Phaser.Scene {
         this.healthText.setText('Health:' + this.player.getData('health'));
         this.ammoCountText.setText('Ammo Count:' + Math.trunc(this.player.getData('ammo')));
         this.ammoTypeText.setText('Ammo Type:' + (this.player.getData('bulletState') + 1).toString());
+
+        const respawnData = {
+            type: 'respawn',
+            id: this.socket.id, // player's ID
+            x: this.player.x,    // new position
+            y: this.player.y
+        };
+        this.socket.send(JSON.stringify(respawnData));
+        this.physics.add.overlap(this.player, this.bulletGroup, this.playerHit, null, this);
     }
 
     
 
     playerHit(player, bullet) {
         if (bullet.active && bullet.visible && this.alive && bullet.getData('player') !== this.socket.id) {
+            const otherPlayer = this.otherPlayers[bullet.getData('player')];
+
+            if (otherPlayer) {
             player.setData('health', player.getData('health') - 1);
             if (player.getData('health') < 1) {
                 this.otherPlayers[bullet.getData('player')].setData('points', this.player.getData('points')+3);
@@ -143,16 +158,19 @@ class GameScene extends Phaser.Scene {
             setTimeout(() => {
                 this.respawnPlayer();
             }, 5000);
-
+            
+            } else {
+                console.log('Attempted to interact with an undefined player.');
+            }
         }
     }
 
     setupWebSocket() {
         //Uncomment the below line when you push the changes, comment it out when you are testing locally
-        const socket = new WebSocket(`wss://${window.location.host.replace("https://", "")}?lobby=${window.lobbyCode}`);
+        //const socket = new WebSocket(`wss://${window.location.host.replace("https://", "")}?lobby=${window.lobbyCode}`);
 
         //Uncomment the below line when you are testing locally, comment it out when you push the changes
-        //const socket = new WebSocket(`ws://localhost:3000?lobby=${window.lobbyCode}`);
+        const socket = new WebSocket(`ws://localhost:3000?lobby=${window.lobbyCode}`);
 
         socket.onmessage = async (event) => {
             let message;
