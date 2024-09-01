@@ -205,10 +205,10 @@ class GameScene extends Phaser.Scene {
 
     setupWebSocket() {
         //Uncomment the below line when you push the changes, comment it out when you are testing locally
-        //const socket = new WebSocket(`wss://${window.location.host.replace("https://", "")}?lobby=${window.lobbyCode}`);
+        const socket = new WebSocket(`wss://${window.location.host.replace("https://", "")}?lobby=${window.lobbyCode}`);
 
         //Uncomment the below line when you are testing locally, comment it out when you push the changes
-        const socket = new WebSocket(`ws://localhost:3000?lobby=${window.lobbyCode}`);
+        //const socket = new WebSocket(`ws://localhost:3000?lobby=${window.lobbyCode}`);
 
         socket.onmessage = async (event) => {
             let message;
