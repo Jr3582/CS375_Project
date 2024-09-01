@@ -8,11 +8,19 @@ class GameScene extends Phaser.Scene {
         this.ammoCountText = null;
         this.healthText = null;
         this.wallsLayer = null;
+        this.groundLayer = null;
+        this.tileset = null;
         this.alive = true; 
+
+        this.map = null;
+
+        this.vision = null;
+        this.rt = null;
     }
 
     preload() {
         this.load.image('bullet', 'assets/bullet.png');
+        this.load.image('mask', 'assets/mask.png');
 
         // Tile map setup
         this.load.spritesheet('tiles', 'assets/tileSet.png', { frameWidth: 32, frameHeight: 32 });
@@ -36,17 +44,46 @@ class GameScene extends Phaser.Scene {
 
         // Tile map setup
         console.log('Creating tilemap');
-        const map = this.make.tilemap({ key: 'map' });
-        console.log(map);
-        const tileset = map.addTilesetImage('tileset', 'tiles');
+        this.map = this.make.tilemap({ key: 'map' });
+        console.log(this.map);
+        this.tileset = this.map.addTilesetImage('tileset', 'tiles');
 
-        const groundLayer = map.createLayer('Floor Layer', tileset, 0, 0);
-        groundLayer.setDepth(0);
+        this.groundLayer = this.map.createLayer('Floor Layer', this.tileset, 0, 0);
+        this.groundLayer.setDepth(0);
 
-        this.wallsLayer = map.createLayer('Object Layer', tileset, 0, 0);
+        var rtLayer = this.groundLayer;
+        console.log(rtLayer);
+
+        this.wallsLayer = this.map.createLayer('Object Layer', this.tileset, 0, 0);
         this.wallsLayer.setDepth(2);
 
         this.player.setDepth(1);
+
+        const width = this.scale.width * 2;
+        const height = this.scale.height * 2;
+
+        this.rt = this.make.renderTexture({
+            width,
+            height
+        }, true);
+
+        this.rt.fill(0x000000, 1);
+        this.rt.draw(rtLayer, width/2, height/2);
+        
+        this.rt.setTint(0x223e5a);
+
+        this.vision = this.make.image({
+            x: this.player.x,
+            y: this.player.y,
+            key: 'mask',
+            add: false
+        });
+        this.vision.scale = 1;
+
+        this.rt.mask = new Phaser.Display.Masks.BitmapMask(this, this.vision);
+        this.rt.mask.invertAlpha = true;
+        this.rt.setDepth(3)
+
 
         // Set collision for the walls layer
         this.wallsLayer.setCollisionByExclusion([-1]);
@@ -59,11 +96,12 @@ class GameScene extends Phaser.Scene {
         this.addEvents();
 
         // Setup UI elements
-        this.healthText = this.add.text(650, 530, 'Health:' + this.player.getData('health'), { color: 'white', fontSize: '15px '});
+        this.healthText = this.add.text(480, 570, 'Health:' + this.player.getData('health'), { color: 'white', fontSize: '15px '});
         this.ammoTypeText = this.add.text(480, 590, 'Ammo Type:' + (this.player.getData('bulletState') + 1).toString(), { color: 'white', fontSize: '15px ', fontWeight: 'bold'});
         this.ammoCountText = this.add.text(480, 610, 'Ammo Count:' + Math.trunc(this.player.getData('ammo')), { color: 'white', fontSize: '15px ', fontWeight: 'bold'});
-        this.ammoTypeText.setDepth(3);
-        this.ammoCountText.setDepth(3);
+        this.ammoTypeText.setDepth(4);
+        this.ammoCountText.setDepth(4);
+        this.healthText.setDepth(4);
 
         // Wall collision group
         this.walls = this.physics.add.staticGroup();
@@ -309,6 +347,12 @@ class GameScene extends Phaser.Scene {
             this.ammoTypeText.setText('Ammo Type:' + (this.player.getData('bulletState') + 1).toString());
             this.ammoCountText.setText('Ammo Count:' + Math.trunc(this.player.getData('ammo')));
             this.healthText.setText('Health:' + this.player.getData('health'));
+        }
+
+        if (this.vision)
+        {
+            this.vision.x = this.player.x
+            this.vision.y = this.player.y
         }
 
     }
