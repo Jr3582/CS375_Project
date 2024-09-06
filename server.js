@@ -52,7 +52,7 @@ wss.on('connection', (ws, req) => {
     players[id] = { x: 400, y: 300, kills: 0 };  
     ws.send(JSON.stringify({ type: 'init', id }));
 
-    let gameTimer = 30; // 1 minute timer
+    let gameTimer = 90; // One and a half minutes timer
 
     let interval = setInterval(() => {
         gameTimer--;
