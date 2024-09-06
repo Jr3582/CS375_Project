@@ -26,6 +26,7 @@ class GameScene extends Phaser.Scene {
         this.load.image('mask', 'assets/mask.png');
         this.load.image('player', 'assets/Player.png');
         this.load.image('enemy', 'assets/Enemy.png');
+        this.load.audio('music', 'assets/background.mp3')
 
         // Tile map setup
         this.load.spritesheet('tiles', 'assets/tileSet.png', { frameWidth: 32, frameHeight: 32 });
@@ -44,6 +45,11 @@ class GameScene extends Phaser.Scene {
         this.player.setData('fireRate', 250);
         this.player.setData('health', 3);
         this.player.setData('points', 0);
+        this.backgroundMusic = this.sound.add('music', {
+            loop: true,
+            volume: 0.2
+        });
+        this.backgroundMusic.play();
 
         this.alive = true;  
 
@@ -160,7 +166,7 @@ class GameScene extends Phaser.Scene {
         if (this.player) {
             this.player.destroy();
         }
-    
+
         // Recreate the player
         this.player = this.add.sprite(400, 300, 'player')
         this.physics.add.existing(this.player);
@@ -201,7 +207,7 @@ class GameScene extends Phaser.Scene {
         this.socket.send(JSON.stringify(respawnData));
         this.physics.add.overlap(this.player, this.bulletGroup, this.playerHit, null, this);
     }
-
+    
     
 
     playerHit(player, bullet) {
@@ -240,10 +246,10 @@ class GameScene extends Phaser.Scene {
 
     setupWebSocket() {
         //Uncomment the below line when you push the changes, comment it out when you are testing locally
-        const socket = new WebSocket(`wss://${window.location.host.replace("https://", "")}?lobby=${window.lobbyCode}`);
+        // const socket = new WebSocket(`wss://${window.location.host.replace("https://", "")}?lobby=${window.lobbyCode}`);
 
         //Uncomment the below line when you are testing locally, comment it out when you push the changes
-        // const socket = new WebSocket(`ws://localhost:3000?lobby=${window.lobbyCode}`);
+        const socket = new WebSocket(`ws://localhost:3000?lobby=${window.lobbyCode}`);
 
         socket.onmessage = async (event) => {
             let message;
