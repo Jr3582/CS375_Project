@@ -23,12 +23,44 @@
             });
     </script>
 </head>
+<style>
+    body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background-image: url('./assets/gamescene_bg.jpg');
+            background-size: cover;
+            background-position: center;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
 
+        #background-video {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            z-index: -1;
+            transform: translate(-50%, -50%);
+            background-size: cover;
+        }
+    h1 {
+        color: white;
+        text-align: center;
+        font-family: Arial, sans-serif;
+    }
+</style>
 <body>
-    <h1>2D Shooter - Lobby: <span id="lobbyDisplay"></span></h1>
-    <script>
-        document.getElementById('lobbyDisplay').innerText = window.lobbyCode;
-    </script>
+    <h1>2D Shooter</h1>
 </body>
 
 </html>
