@@ -24,6 +24,8 @@ class GameScene extends Phaser.Scene {
     preload() {
         this.load.image('bullet', 'assets/bullet.png');
         this.load.image('mask', 'assets/mask.png');
+        this.load.image('player', 'assets/Player.png');
+        this.load.image('enemy', 'assets/Enemy.png');
 
         // Tile map setup
         this.load.spritesheet('tiles', 'assets/tileSet.png', { frameWidth: 32, frameHeight: 32 });
@@ -32,7 +34,7 @@ class GameScene extends Phaser.Scene {
 
     create() {
         // Create player
-        this.player = this.add.rectangle(400, 300, 25, 25, 0x00ff00);
+        this.player = this.add.sprite(400, 300, 'player');
         this.physics.add.existing(this.player);
         this.player.body.setCollideWorldBounds(true);
         this.player.setData('ammo', 25);
@@ -46,9 +48,7 @@ class GameScene extends Phaser.Scene {
         this.alive = true;  
 
         // Tile map setup
-        console.log('Creating tilemap');
         this.map = this.make.tilemap({ key: 'map' });
-        console.log(this.map);
         this.tileset = this.map.addTilesetImage('tileset', 'tiles');
 
         this.groundLayer = this.map.createLayer('Floor Layer', this.tileset, 0, 0);
@@ -99,9 +99,9 @@ class GameScene extends Phaser.Scene {
         this.addEvents();
 
         // Setup UI elements
-        this.healthText = this.add.text(480, 570, 'Health:' + this.player.getData('health'), { color: 'white', fontSize: '15px '});
-        this.ammoTypeText = this.add.text(480, 590, 'Ammo Type:' + (this.player.getData('bulletState') + 1).toString(), { color: 'white', fontSize: '15px ', fontWeight: 'bold'});
-        this.ammoCountText = this.add.text(480, 610, 'Ammo Count:' + Math.trunc(this.player.getData('ammo')), { color: 'white', fontSize: '15px ', fontWeight: 'bold'});
+        this.healthText = this.add.text(1025, 550, 'Health:' + this.player.getData('health'), { color: 'white', fontSize: '30px '});
+        this.ammoTypeText = this.add.text(1025, 580, 'Ammo Type:' + (this.player.getData('bulletState') + 1).toString(), { color: 'white', fontSize: '30px ', fontWeight: 'bold'});
+        this.ammoCountText = this.add.text(1025, 610, 'Ammo Count:' + Math.trunc(this.player.getData('ammo')), { color: 'white', fontSize: '30px ', fontWeight: 'bold'});
         this.ammoTypeText.setDepth(4);
         this.ammoCountText.setDepth(4);
         this.healthText.setDepth(4);
@@ -162,7 +162,7 @@ class GameScene extends Phaser.Scene {
         }
     
         // Recreate the player
-        this.player = this.add.rectangle(400, 300, 25, 25, 0x00ff00);
+        this.player = this.add.sprite(400, 300, 'player')
         this.physics.add.existing(this.player);
     
         // Reinitialize the player's physics body properties
@@ -240,10 +240,10 @@ class GameScene extends Phaser.Scene {
 
     setupWebSocket() {
         //Uncomment the below line when you push the changes, comment it out when you are testing locally
-        const socket = new WebSocket(`wss://${window.location.host.replace("https://", "")}?lobby=${window.lobbyCode}`);
+        // const socket = new WebSocket(`wss://${window.location.host.replace("https://", "")}?lobby=${window.lobbyCode}`);
 
         //Uncomment the below line when you are testing locally, comment it out when you push the changes
-        //const socket = new WebSocket(`ws://localhost:3000?lobby=${window.lobbyCode}`);
+        const socket = new WebSocket(`ws://localhost:3000?lobby=${window.lobbyCode}`);
 
         socket.onmessage = async (event) => {
             let message;
@@ -289,7 +289,7 @@ class GameScene extends Phaser.Scene {
                 if (data.id !== socket.id) {   
                     if (!this.otherPlayers[data.id]) {
                         // Create new player at the specified position
-                        const otherPlayer = this.add.rectangle(data.x, data.y, 25, 25, 0xff0000);
+                        const otherPlayer = this.add.sprite(400, 300, 'enemy');
                         this.physics.add.existing(otherPlayer);
                         this.otherPlayers[data.id] = otherPlayer;
                     } else {
@@ -312,7 +312,7 @@ class GameScene extends Phaser.Scene {
             } else {
                 if (data.id !== socket.id) {
                     if (!this.otherPlayers[data.id]) {
-                        const otherPlayer = this.add.rectangle(data.x, data.y, 25, 25, 0xff0000);
+                        const otherPlayer = this.add.sprite(400, 300, 'enemy');
                         this.physics.add.existing(otherPlayer);
                         this.otherPlayers[data.id] = otherPlayer;
                     } else {
@@ -386,10 +386,10 @@ class GameScene extends Phaser.Scene {
 
     update() {
         let moved = false;
-
+    
         if (this.player && this.player.body && this.alive) {
             this.player.body.setVelocity(0);
-
+    
             if (this.cursors.left.isDown) {
                 this.player.body.setVelocityX(-160);
                 moved = true;
@@ -406,9 +406,8 @@ class GameScene extends Phaser.Scene {
             }
             const pointer = this.input.activePointer;
             const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, pointer.x, pointer.y);
-            this.player.setRotation(angle);
-        }
-
+            this.player.setRotation(angle + Phaser.Math.DegToRad(90));
+    
         if (moved) {
             const data = { id: this.socket.id, x: this.player.x, y: this.player.y };
             this.socket.send(JSON.stringify(data));
@@ -429,15 +428,15 @@ class GameScene extends Phaser.Scene {
             this.vision.x = this.player.x
             this.vision.y = this.player.y
         }
-
     }
+}
 }
     
 
 // Game configuration
 const config = {
     type: Phaser.AUTO,
-    width: 640,
+    width: 1280,
     height: 640,
     scene: [GameScene],
     physics: {

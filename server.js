@@ -95,6 +95,8 @@ wss.on('connection', (ws, req) => {
                     }
                 });
             }
+        } else if(data.type === 'mouse_position') {
+            broadcast(data);
         } else if (data.type === 'request_positions') {
             // Respond with all player positions to the requesting client
             Object.keys(players).forEach(playerId => {
