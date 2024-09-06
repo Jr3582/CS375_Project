@@ -90,32 +90,6 @@ wss.on('connection', (ws, req) => {
             });
         }
 
-        if (data.type === 'position') {
-            players[data.id] = { x: data.x, y: data.y };
-
-            // Broadcast the position to all clients in the lobby
-            if (lobbies[lobby]) {
-                Object.keys(lobbies[lobby]).forEach((clientId) => {
-                    if (lobbies[lobby][clientId] && lobbies[lobby][clientId].readyState === WebSocket.OPEN) {
-                        lobbies[lobby][clientId].send(message);
-                    }
-                });
-            }
-        } else if (data.type === 'request_positions') {
-            // Respond with all player positions to the requesting client
-            Object.keys(players).forEach(playerId => {
-                if (lobbies[lobby][playerId] && lobbies[lobby][playerId].readyState === WebSocket.OPEN) {
-                    const playerPosition = {
-                        type: 'position',
-                        id: playerId,
-                        x: players[playerId].x,
-                        y: players[playerId].y
-                    };
-                    ws.send(JSON.stringify(playerPosition));
-                }
-            });
-        }
-
         if (data.type === 'replayStatus') {
             if (!lobbies[lobby].playerStatuses) {
                 lobbies[lobby].playerStatuses = {};
