@@ -2,9 +2,10 @@
 #Instructions on how to run locally
 1. make sure line 252 in public/multiplayer-client.js is uncommented and line 249 is commented out.
 2. then go to the project directory in your command line shoud be path/to/file/CS375_Project.
-3. then run node server.js.
-4. and go to http://localhost:3000 locally
-5. play test and have fun!
+3. then run 'npm i' to install all the packages locally.
+4. then run 'npm start' to start the server.
+5. and go to http://localhost:3000 locally
+6. play test and have fun!
 
 #Instructions on how to deploy the project
 1. make sure line 249 is uncommented, and line 252 is commented out in public/multiplayer-client.js
