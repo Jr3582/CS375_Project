@@ -353,7 +353,6 @@ class GameScene extends Phaser.Scene {
                 console.log('Attempted to interact with an undefined player.');
             }
         }
-    }
 
     setupWebSocket() {
         //Uncomment the below line when you push the changes, comment it out when you are testing locally
@@ -441,6 +440,7 @@ class GameScene extends Phaser.Scene {
                 }
             }
         };
+        
 
         socket.onopen = () => {
             console.log(`Connected to WebSocket server in lobby ${window.lobbyCode}`);
@@ -550,6 +550,7 @@ class GameScene extends Phaser.Scene {
         }
 
     }
+}
     
 
 // Game configuration
