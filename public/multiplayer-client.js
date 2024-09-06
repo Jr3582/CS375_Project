@@ -106,8 +106,8 @@ class GameScene extends Phaser.Scene {
         this.healthText = this.add.text(480, 570, 'Health:' + this.player.getData('health'), { color: 'white', fontSize: '15px '});
         this.ammoTypeText = this.add.text(480, 590, 'Ammo Type:' + (this.player.getData('bulletState') + 1).toString(), { color: 'white', fontSize: '15px ', fontWeight: 'bold'});
         this.ammoCountText = this.add.text(480, 610, 'Ammo Count:' + Math.trunc(this.player.getData('ammo')), { color: 'white', fontSize: '15px ', fontWeight: 'bold'});
-        this.ammoTypeText.setDepth(2);
-        this.ammoCountText.setDepth(2);
+        this.ammoTypeText.setDepth(4);
+        this.ammoCountText.setDepth(4);
         this.healthText.setDepth(4);
 
         // Add a countdown timer text at the top center
