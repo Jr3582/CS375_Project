@@ -127,18 +127,18 @@ class GameScene extends Phaser.Scene {
         });
         this.gameOverText = this.add.text(320, 240, 'Game Over!', { fontSize: '64px', fill: '#ff0000' })
         .setOrigin(0.5)
-        .setDepth(2)
+        .setDepth(4)
         .setVisible(false);
 
         this.replayButton = this.add.text(320, 320, 'Click to Replay', { fontSize: '32px', fill: '#00ff00' })
         .setOrigin(0.5, 0.5)
-        .setDepth(2)
+        .setDepth(4)
         .setInteractive()
         .setVisible(false);
 
         this.replayText = this.add.text(320, 360, '', { fontSize: '20px', fill: '#ffffff' })
         .setOrigin(0.5)
-        .setDepth(2)
+        .setDepth(4)
         .setVisible(false);
 
         this.replayButton.on('pointerdown', () => {
