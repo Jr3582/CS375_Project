@@ -325,19 +325,20 @@ class GameScene extends Phaser.Scene {
     
 
     playerHit(player, bullet) {
-        if (bullet.active && bullet.visible && this.alive && bullet.ownerId !== this.socket.id) {
-            player.setData('health', player.getData('health') - 1);
-            if (player.getData('health') < 1) {
-            // Handle player "death"
-                this.otherPlayers[bullet.getData('player')].setData('points', this.player.getData('points')+3);
+        if (bullet.active && bullet.visible && this.alive && bullet.getData('player') !== this.socket.id) {
+            const otherPlayer = this.otherPlayers[bullet.getData('player')];
 
-                console.log('Player hit by bullet!');
-                player.setData('points', player.getData('points')-1);
-                //player.destroy();
-                player.setActive(false);
-                player.setVisible(false);
-                this.alive = false;
-                setTimeout(this.playerRespawn(player), 5000);
+            if (otherPlayer) {
+                player.setData('health', player.getData('health') - 1);
+                bullet.setActive(false);
+                bullet.setVisible(false);
+
+                if (player.getData('health') < 1) {
+                    this.otherPlayers[bullet.getData('player')].setData('points', this.player.getData('points')+3);
+                    console.log('Player hit by bullet!');
+                    player.setData('points', player.getData('points')-1);
+                    player.destroy();
+                    this.alive = false;
 
                     const deathData = {
                         type: 'death',
@@ -353,6 +354,7 @@ class GameScene extends Phaser.Scene {
                 console.log('Attempted to interact with an undefined player.');
             }
         }
+    }
 
     setupWebSocket() {
         //Uncomment the below line when you push the changes, comment it out when you are testing locally
