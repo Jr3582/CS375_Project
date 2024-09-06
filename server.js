@@ -30,6 +30,8 @@ const PORT = process.env.PORT || 3000;
 const lobbies = {}; 
 const players = {};
 
+const playerStatuses = {};
+
 app.use(express.static('public'));
 
 app.get('/env.json', (req, res) => {
@@ -88,35 +90,26 @@ wss.on('connection', (ws, req) => {
             });
         }
 
-    if (data.type === 'position') {
-        players[data.id] = { x: data.x, y: data.y };
-
-        // Broadcast the position to all clients in the lobby
-        if (lobbies[lobby]) {
-            Object.keys(lobbies[lobby]).forEach((clientId) => {
-                if (lobbies[lobby][clientId] && lobbies[lobby][clientId].readyState === WebSocket.OPEN) {
-                    lobbies[lobby][clientId].send(message);
-                }
-            });
-        }
-    } else if (data.type === 'request_positions') {
-        // Respond with all player positions to the requesting client
-        Object.keys(players).forEach(playerId => {
-            if (lobbies[lobby][playerId] && lobbies[lobby][playerId].readyState === WebSocket.OPEN) {
-                const playerPosition = {
-                    type: 'position',
-                    id: playerId,
-                    x: players[playerId].x,
-                    y: players[playerId].y
-                };
-                ws.send(JSON.stringify(playerPosition));
+        if (data.type === 'replayStatus') {
+            if (!lobbies[lobby].playerStatuses) {
+                lobbies[lobby].playerStatuses = {};
             }
-        });
-    }
+            lobbies[lobby].playerStatuses[data.id] = data.replayReady;
 
-    
-
-        
+            const allReady = Object.values(playerStatuses).every(status => status);
+            if (allReady) {
+                // Notify all clients to restart the game
+                broadcast({
+                    type: 'startReplay'
+                });
+            } else {
+                // Broadcast updated statuses to all clients
+                broadcast({
+                    type: 'updateReplayStatus',
+                    playerStatuses
+                });
+            }
+        }
     });
 
     ws.on('close', () => {
@@ -127,6 +120,18 @@ wss.on('connection', (ws, req) => {
         }
     });
 });
+
+    
+function broadcast(message) {
+    const messageString = JSON.stringify(message);
+    if (lobbies[lobby]) {
+        Object.values(lobbies[lobby]).forEach(client => {
+            if (client.readyState === WebSocket.OPEN) {
+                client.send(messageString);
+            }
+        });
+    }
+}
 
 server.listen(PORT, host, () => {
     console.log(`http://${host}:${PORT}`);

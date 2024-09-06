@@ -11,6 +11,13 @@ class GameScene extends Phaser.Scene {
         this.groundLayer = null;
         this.tileset = null;
         this.alive = true; 
+        this.remainingMinutes = 3;
+        this.remainingSeconds = 30;
+        this.timerText = null;
+        this.replayButton = null;
+        this.replayText = null;
+        this.gameOverText = null;
+        this.playerStatuses = {};
 
         this.map = null;
 
@@ -103,7 +110,43 @@ class GameScene extends Phaser.Scene {
         this.ammoCountText.setDepth(4);
         this.healthText.setDepth(4);
 
-        // Wall collision group
+        // Add a countdown timer text at the top center
+        this.timerText = this.add.text(320, 10, 'Time: 03 : 30', { fontSize: '32px', fill: '#fff' }).setDepth(2);
+        this.timerText.setOrigin(0.5, 0);
+
+        // Change values to reflect timer values
+        this.remainingMinutes = 3;
+        this.remainingSeconds = 30;
+
+        // Start the timer
+        this.time.addEvent({
+            delay: 1000,
+            callback: this.updateTimer,
+            callbackScope: this,
+            loop: true
+        });
+        this.gameOverText = this.add.text(320, 240, 'Game Over!', { fontSize: '64px', fill: '#ff0000' })
+        .setOrigin(0.5)
+        .setDepth(4)
+        .setVisible(false);
+
+        this.replayButton = this.add.text(320, 320, 'Click to Replay', { fontSize: '32px', fill: '#00ff00' })
+        .setOrigin(0.5, 0.5)
+        .setDepth(4)
+        .setInteractive()
+        .setVisible(false);
+
+        this.replayText = this.add.text(320, 360, '', { fontSize: '20px', fill: '#ffffff' })
+        .setOrigin(0.5)
+        .setDepth(4)
+        .setVisible(false);
+
+        this.replayButton.on('pointerdown', () => {
+            console.log('Replay button clicked');
+            this.sendReplayStatus();
+        });
+
+        // Wall creation
         this.walls = this.physics.add.staticGroup();
 
         // Set up WASD keys for movement
@@ -129,6 +172,108 @@ class GameScene extends Phaser.Scene {
 
         // Setup WebSocket connection and event listeners
         this.setupWebSocket();
+    }
+
+    updateTimer() {
+        if (this.remainingSeconds > 0) {
+            this.remainingSeconds--;
+        } else {
+            if (this.remainingMinutes > 0) {
+                this.remainingMinutes--;
+                this.remainingSeconds = 59;
+            } else {
+                this.remainingSeconds = 0;
+                this.timerText.setText('Time: 0 : 00');
+                this.endGame();
+                return;
+            }
+        }
+        const minutesDisplay = String(this.remainingMinutes).padStart(2, '0');
+        const secondsDisplay = String(this.remainingSeconds).padStart(2, '0');
+        this.timerText.setText(`Time: ${minutesDisplay} : ${secondsDisplay}`).setDepth(2);
+    }
+    
+
+    endGame() {
+        this.alive = false;
+
+        if (this.gameOverText) {
+            this.gameOverText.setVisible(true);
+        }
+        if (this.replayButton) {
+            this.replayButton.setVisible(true);
+        }
+        this.sendReplayStatus();
+    }
+
+    sendReplayStatus() {
+        console.log('Sending replay status');
+        const replayData = {
+            type: 'replayStatus',
+            id: this.socket.id,
+            replayReady: true
+        };
+        const message = JSON.stringify(replayData);
+        if (this.socket.readyState === WebSocket.OPEN) {
+            this.socket.send(message);
+        } else {
+            console.error('WebSocket is not open.');
+        }
+    }
+    
+
+    handleReplayStatusUpdate(data) {
+        const { id, replayReady } = data;
+        this.playerStatuses[id] = { replayReady };
+    
+        // Check if all players are ready
+        const allReady = Object.values(this.playerStatuses).every(status => status.replayReady);
+    
+        if (allReady) {
+            // All players are ready, send restart signal
+            this.socket.send(JSON.stringify({ type: 'restart' }));
+        } else {
+            this.updateReplayText();  // Show number of players not ready
+        }
+    }
+    
+    
+
+    updateReplayText() {
+        const numPlayers = Object.keys(this.playerStatuses).length;
+        const numNotReady = Object.values(this.playerStatuses).filter(status => !status.replayReady).length;
+        this.replayText.setText(`Players not ready: ${numNotReady}/${numPlayers}`);
+        this.replayText.setVisible(true);
+    }
+
+    resetGameState() {
+        this.player.setPosition(400, 300);
+        this.player.setData('ammo', 25);
+        this.player.setData('maxAmmo', 50);
+        this.player.setData('bulletState', 0);
+        this.player.setData('lastFireTime', 0);
+        this.player.setData('fireRate', 250);
+        this.player.setData('health', 3);
+        this.player.setData('points', 0);
+        this.alive = true;
+        
+        // Resets timer
+        this.remainingMinutes = 3;
+        this.remainingSeconds = 30;
+        this.timerText.setText('Time: 03 : 30');
+    }
+
+    restartGame() {
+        if (this.gameOverText) {
+            this.gameOverText.setVisible(false);
+        }
+        if (this.replayButton) {
+            this.replayButton.setVisible(false);
+        }
+    
+        this.resetGameState();
+    
+        this.socket.send(JSON.stringify({ type: 'restart' }));
     }
 
     respawnPlayer() {
@@ -272,6 +417,19 @@ class GameScene extends Phaser.Scene {
                     this.otherPlayers[data.id].destroy();
                     delete this.otherPlayers[data.id];
                 }
+            } else if (data.type === 'startReplay') {
+                this.restartGame();
+            } else if (data.type === 'updateReplayStatus') {
+                this.playerStatuses = data.playerStatuses;
+                this.updateReplayText();
+
+                const allPlayersReady = Object.values(this.playerStatuses).every(status => status.readyToReplay);
+
+                if (allPlayersReady) {
+                    this.restartGame();
+                }
+            } else if (data.type === 'replayStatus') {
+                this.handleReplayStatusUpdate(data);
             } else {
                 if (data.id !== socket.id) {
                     if (!this.otherPlayers[data.id]) {
@@ -284,6 +442,7 @@ class GameScene extends Phaser.Scene {
                 }
             }
         };
+        
 
         socket.onopen = () => {
             console.log(`Connected to WebSocket server in lobby ${window.lobbyCode}`);
@@ -366,6 +525,9 @@ class GameScene extends Phaser.Scene {
                 this.player.body.setVelocityY(160);
                 moved = true;
             }
+            const pointer = this.input.activePointer;
+            const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, pointer.x, pointer.y);
+            this.player.setRotation(angle);
         }
 
         if (moved) {
@@ -391,6 +553,7 @@ class GameScene extends Phaser.Scene {
 
     }
 }
+    
 
 // Game configuration
 const config = {
